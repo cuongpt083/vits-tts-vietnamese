@@ -7,5 +7,5 @@ COPY ./ /app/src
 RUN pip install -r requirements.txt
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/src/vits-tts-vi.json
 
-ENTRYPOINT ./start.sh
-# CMD ["python","-u","server.py"]
+#ENTRYPOINT ./start.sh
+CMD ["python","-u","server.py"]
