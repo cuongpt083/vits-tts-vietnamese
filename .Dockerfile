@@ -4,7 +4,7 @@ RUN mkdir /app
 
 WORKDIR /app/src
 COPY ./ /app/src
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 ENV GOOGLE_APPLICATION_CREDENTIALS=/app/src/vits-tts-vi.json
 
 #ENTRYPOINT ./start.sh

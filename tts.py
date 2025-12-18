@@ -7,8 +7,8 @@ import time
 from pathlib import Path
 from enum import Enum
 import os
+import io
 import numpy as np
-import onnxruntime
 import hashlib
 from typing import List
 from wavfile import write as write_wav
@@ -29,11 +29,17 @@ EOS = "$"  # end of sentence
 
 def text_to_speech(text:str,speed:str,model_name:str,hash_of_text:str):
     """Main entry point"""
+    try:
+        import onnxruntime  # type: ignore
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to import onnxruntime. If you see 'A module that was compiled using NumPy 1.x cannot be run in NumPy 2.x', "
+            "install 'numpy<2' and reinstall dependencies."
+        ) from e
 
     speed = speed.strip()
     length_scale = float(SPEED_VALUES[speed])
 
-    output_dir = os.getcwd()+"/audio/"
     sess_options = onnxruntime.SessionOptions()
     model = onnxruntime.InferenceSession(model_name, sess_options=sess_options)
     config = load_config(model_name)
@@ -77,9 +83,9 @@ def text_to_speech(text:str,speed:str,model_name:str,hash_of_text:str):
     # real_time_factor = (
     #     infer_sec / audio_duration_sec if audio_duration_sec > 0 else 0.0
     # )
-    output_path = output_dir + f"/{hash_of_text}.wav"
-    write_wav(str(output_path), SAMPLE_RATE, audio)
-    return output_path
+    wav_buffer = io.BytesIO()
+    write_wav(wav_buffer, SAMPLE_RATE, audio)
+    return wav_buffer.getvalue()
 
 
 
@@ -219,4 +225,3 @@ def transform(input_data):
     phase = np.arctan2(imag_part.data, real_part.data)
 
     return magnitude, phase
-
