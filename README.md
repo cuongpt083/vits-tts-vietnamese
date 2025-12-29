@@ -30,17 +30,24 @@ http://localhost:5004/tts?text=Xin chào bạn&speed=normal
 ```
 ### Text-to-Speech API
 ```
-http://localhost:{port}/tts?text=<your_text>&speed=<speed_option>
+http://localhost:{port}/tts?text=<your_text>&speed=<speed_option>&lang=<lang>
 ```
 
 Parameters:
-- `text`: Your text in UTF-8 encoding (supports Vietnamese)
+- `text`: Your text in UTF-8 encoding (max 1000 characters)
 - `speed`: Speed of speech generation
   - Available options:
     - `normal`: Standard speaking rate
     - `fast`: Increased speaking rate
     - `slow`: Decreased speaking rate
     - `very_fast`: Maximum speaking rate
+- `lang`: Language (optional)
+  - `vi` (default): Vietnamese model (`pretrained_vi.onnx`)
+  - `en`: English model (`pretrained_en_US.onnx`)
+
+Limits:
+- Max 3 requests/second and 30 requests/minute per client IP (returns HTTP 429)
+- Generated WAV files are kept for up to 4 hours, then deleted
 
 Response Format:
 ```json
@@ -48,6 +55,7 @@ Response Format:
     "hash": "<unique_identifier>",
     "text": "<input_text>",
     "speed": "<selected_speed>",
+    "lang": "<selected_lang>",
     "audio_url": "http://localhost:{port}/audio/<hash>.wav"
 }
 ```
@@ -58,6 +66,9 @@ http://localhost:{port}/audio/<hash>.wav
 ```
 - Returns WAV audio file
 - Content-Type: audio/x-wav
+
+### OpenAPI
+- Spec file: `openapi.yaml`
 
 
 

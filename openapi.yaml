@@ -1,0 +1,150 @@
+openapi: 3.0.3
+info:
+  title: VITS TTS Vietnamese/English API
+  version: 1.0.0
+  description: |
+    REST HTTP API for Text-to-Speech using VITS ONNX models.
+
+    Notes:
+    - `GET /tts` generates (or reuses) a WAV file and returns an `audio_url`.
+    - WAV files are stored under `./audio/` and are deleted after ~4 hours by a periodic cleanup task.
+    - Rate limits (per client IP): 3 requests/second and 30 requests/minute.
+servers:
+  - url: http://localhost:8888
+    description: Local server (direct)
+  - url: http://localhost:5004
+    description: Docker-compose port mapping example
+tags:
+  - name: Web
+  - name: TTS
+paths:
+  /:
+    get:
+      tags: [Web]
+      summary: Web UI (HTML)
+      responses:
+        "200":
+          description: HTML page
+          content:
+            text/html:
+              schema:
+                type: string
+  /tts:
+    get:
+      tags: [TTS]
+      summary: Text-to-speech
+      description: Generates (or reuses) a WAV file for the provided text.
+      parameters:
+        - name: text
+          in: query
+          required: true
+          description: Input text (UTF-8), max 1000 characters.
+          schema:
+            type: string
+            maxLength: 1000
+          example: Xin chào bạn
+        - name: speed
+          in: query
+          required: true
+          description: Speech speed preset.
+          schema:
+            type: string
+            enum: [very_slow, slow, normal, fast, very_fast]
+          example: normal
+        - name: lang
+          in: query
+          required: false
+          description: |
+            Language selection. Defaults to `vi`.
+            - `vi` uses `pretrained_vi.onnx`
+            - `en` uses `pretrained_en_US.onnx`
+          schema:
+            type: string
+            enum: [vi, en]
+            default: vi
+          example: vi
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TtsResponse"
+              examples:
+                vi:
+                  value:
+                    hash: e6bc1768c82ae63ed8ee61ca2349efa4ef9f166e
+                    text: xin chào bạn
+                    speed: normal
+                    lang: vi
+                    audio_url: http://localhost:5004/audio/e6bc1768c82ae63ed8ee61ca2349efa4ef9f166e.wav
+        "400":
+          description: Bad Request (query validation failed)
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: 'Query parameter validation failed: ...'
+        "429":
+          description: Too Many Requests (rate limited)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Too Many Requests
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /audio/{filename}:
+    get:
+      tags: [TTS]
+      summary: Fetch generated WAV file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: WAV filename returned by `/tts` (e.g. `<hash>.wav`).
+          schema:
+            type: string
+          example: e6bc1768c82ae63ed8ee61ca2349efa4ef9f166e.wav
+      responses:
+        "200":
+          description: WAV audio file
+          content:
+            audio/wav:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not Found
+components:
+  schemas:
+    TtsResponse:
+      type: object
+      required: [hash, text, speed, lang, audio_url]
+      properties:
+        hash:
+          type: string
+          description: SHA1 hash of `lang|text|speed`.
+        text:
+          type: string
+        speed:
+          type: string
+          enum: [very_slow, slow, normal, fast, very_fast]
+        lang:
+          type: string
+          enum: [vi, en]
+        audio_url:
+          type: string
+          description: Absolute URL to the generated WAV file.
+          example: http://localhost:5004/audio/<hash>.wav
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

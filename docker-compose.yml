@@ -1,0 +1,13 @@
+services:
+  vits-tts-vi:
+    build:
+      context: .
+      dockerfile: .Dockerfile
+    image: vits-tts-vi:v1.0
+    ports:
+      - "5004:8888"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/src/vits-tts-vi.json
+    volumes:
+      - ./audio:/app/src/audio
+    restart: unless-stopped
